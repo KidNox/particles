@@ -11,4 +11,5 @@ public interface GLProgram {
 
     void onSizeChanged(GLEngine glEngine);
 
+    int getMaxFPS();
 }

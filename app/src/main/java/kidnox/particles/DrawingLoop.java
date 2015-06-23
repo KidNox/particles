@@ -8,8 +8,6 @@ import java.util.concurrent.Semaphore;
 
 public class DrawingLoop extends Thread {
 
-    public static int FPS = 60;
-
     private final GLProgram glProgram;
     private SurfaceTexture surface;
     private SurfaceConfig surfaceConfig;
@@ -68,7 +66,7 @@ public class DrawingLoop extends Thread {
     }
 
     private void loop(GLEngine glEngine) throws InterruptedException {
-        final int frameDuration = 1000 / FPS;
+        final int frameDuration = 1000 / glProgram.getMaxFPS();
         isPausing = false;
         while (isRunning) {
             synchronized (this) {

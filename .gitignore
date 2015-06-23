@@ -3,5 +3,4 @@
 /local.properties
 .DS_Store
 /build
-.iml
-/.iml
+*.iml

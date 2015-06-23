@@ -35,4 +35,8 @@ public class GLParticleProgram implements GLProgram {
         Log.d("GL", "onSizeChanged");
         //glEngine.applyFulSizedViewport();
     }
+
+    @Override public int getMaxFPS() {
+        return 60;
+    }
 }

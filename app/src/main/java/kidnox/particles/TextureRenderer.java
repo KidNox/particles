@@ -20,6 +20,7 @@ public class TextureRenderer implements TextureView.SurfaceTextureListener {
 
                 @Override public void drawFrame(GLEngine glEngine, long currentTime) {
                     //checkThread("drawFrame");
+                    fpsPrinter(glEngine);
                     _glProgram.drawFrame(glEngine, currentTime);
                 }
 
@@ -31,6 +32,10 @@ public class TextureRenderer implements TextureView.SurfaceTextureListener {
                 @Override public void onSizeChanged(GLEngine glEngine) {
                     checkThread("onSizeChanged");
                     _glProgram.onSizeChanged(glEngine);
+                }
+
+                @Override public int getMaxFPS() {
+                    return _glProgram.getMaxFPS();
                 }
             };
         } else {
@@ -78,6 +83,20 @@ public class TextureRenderer implements TextureView.SurfaceTextureListener {
 
     static void log(Object message) {
         Log.d("TextureRenderer", String.valueOf(message));
+    }
+
+    long lastPrintTime;
+    int frameCounter;
+    void fpsPrinter(GLEngine glEngine) {
+        if(lastPrintTime == 0) {
+            lastPrintTime = System.currentTimeMillis();
+        }
+        frameCounter++;
+        if(System.currentTimeMillis() - lastPrintTime > 1000) {
+            log("FPS = " + frameCounter);
+            frameCounter = 0;
+            lastPrintTime = System.currentTimeMillis();
+        }
     }
 
     void checkThread(String methodName) {

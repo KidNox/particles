@@ -197,6 +197,10 @@ public class GLProgramImpl implements GLProgram {
         glEngine.applyFulSizedViewport();
     }
 
+    @Override public int getMaxFPS() {
+        return 60;
+    }
+
     private static void checkGlError() {
         int error = glGetError();
         if (error != GL10.GL_NO_ERROR) {
