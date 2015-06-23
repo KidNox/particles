@@ -1,6 +1,7 @@
 package kidnox.particles;
 
 import android.graphics.SurfaceTexture;
+import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.util.Log;
 
@@ -11,7 +12,7 @@ import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
 import javax.microedition.khronos.opengles.GL10;
 
-public class GLEngine {
+public class GLEngine implements SurfaceConfig.OnConfigChangedListener {
 
     static final int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
     static final int EGL_OPENGL_ES2_BIT = 4;
@@ -69,10 +70,12 @@ public class GLEngine {
             throw new RuntimeException("GL10 not supported", ex);
         }
         lastGlInitTime = System.currentTimeMillis();
+
+        surfaceConfig.setOnConfigChangedListener(this);
     }
 
     private EGLContext createContext(EGL10 egl, EGLDisplay eglDisplay, EGLConfig eglConfig) {
-        int[] attrib_list = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
+        int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE};
         return egl.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
     }
 
@@ -90,13 +93,13 @@ public class GLEngine {
 
     private int[] getConfig() {
         return new int[] {
-                EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
                 EGL10.EGL_RED_SIZE, 8,
                 EGL10.EGL_GREEN_SIZE, 8,
                 EGL10.EGL_BLUE_SIZE, 8,
                 EGL10.EGL_ALPHA_SIZE, 8,
                 EGL10.EGL_DEPTH_SIZE, 0,
                 EGL10.EGL_STENCIL_SIZE, 0,
+                EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
                 EGL10.EGL_NONE
         };
     }
@@ -121,4 +124,18 @@ public class GLEngine {
         return lastGlInitTime;
     }
 
+    @Override public void onSizeChanged(int w, int h) {
+        glProgram.onSizeChanged(this);
+    }
+
+    public void applyFulSizedViewport() {
+        //Log.d("GL", "applyFulSizedViewport=" + surfaceConfig.getWidth() + ", " + surfaceConfig.getHeight());
+        GLES20.glViewport(0, 0, surfaceConfig.getWidth(), surfaceConfig.getHeight());
+    }
+
+    public final void swapBuffers() {
+        if(!egl.eglSwapBuffers(eglDisplay, eglSurface)) {
+            throw new RuntimeException("Cannot swap buffers");
+        }
+    }
 }

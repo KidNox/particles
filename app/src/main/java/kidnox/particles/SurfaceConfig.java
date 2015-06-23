@@ -4,32 +4,38 @@ public class SurfaceConfig {
     private int width;
     private int height;
 
+    private volatile OnConfigChangedListener onConfigChangedListener;
+
     public SurfaceConfig() {
     }
 
     public SurfaceConfig(int width, int height) {
-        this.width = width;
-        this.height = height;
+        setSize(width, height);
     }
 
     public int getWidth() {
         return width;
     }
 
-    public void setWidth(int width) {
-        this.width = width;
-    }
-
     public int getHeight() {
         return height;
     }
 
-    public void setHeight(int height) {
-        this.height = height;
+
+    public synchronized final void setSize(int w, int h) {
+        this.width = w;
+        this.height = h;
+        if(onConfigChangedListener != null) {
+            onConfigChangedListener.onSizeChanged(w, h);
+        }
     }
 
-    public final void setSize(int w, int h) {
-        setWidth(w);
-        setHeight(h);
+    public synchronized void setOnConfigChangedListener(OnConfigChangedListener listener) {
+        listener.onSizeChanged(width, height);
+        this.onConfigChangedListener = listener;
+    }
+
+    public interface OnConfigChangedListener {
+        void onSizeChanged(int w, int h);
     }
 }

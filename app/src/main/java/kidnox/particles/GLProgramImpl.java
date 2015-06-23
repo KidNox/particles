@@ -1,11 +1,17 @@
 package kidnox.particles;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.opengl.GLES20;
+import android.opengl.GLUtils;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
+import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.opengles.GL10;
 
 import static android.opengl.GLES20.*;
@@ -35,22 +41,29 @@ public class GLProgramImpl implements GLProgram {
 
     private final float[] mTriangleVerticesData = {
             // X, Y, Z, U, V
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-            1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-            1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+            -0.3f, -0.7f, 0.0f, 0.0f, 0.0f,
+            0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+            -0.7f,  0.3f, 0.0f, 0.0f, 1.0f,
+            0.4f,  0.6f, 0.0f, 1.0f, 1.0f,
     };
 
     private FloatBuffer triangleVertices;
     private int attribPosition;
     private int attribTexCoords;
 
+    private final Context context;
+
+    public GLProgramImpl(Context context) {
+        this.context = context.getApplicationContext();
+    }
+
     @Override public void onBegin(GLEngine glEngine) {
+
         triangleVertices = ByteBuffer.allocateDirect(mTriangleVerticesData.length
                 * FLOAT_SIZE_BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
         triangleVertices.put(mTriangleVerticesData).position(0);
 
-        //int texture = loadTexture(R.drawable.large_photo);
+        int texture = loadTexture(R.drawable.ic_launcher);
         int program = buildProgram(sSimpleVS, sSimpleFS);
 
         attribPosition = glGetAttribLocation(program, "position");
@@ -59,11 +72,11 @@ public class GLProgramImpl implements GLProgram {
         attribTexCoords = glGetAttribLocation(program, "texCoords");
         checkGlError();
 
-        /*int uniformTexture = glGetUniformLocation(program, "texture");
+        int uniformTexture = glGetUniformLocation(program, "texture");
         checkGlError();
 
         glBindTexture(GL_TEXTURE_2D, texture);
-        checkGlError();*/
+        checkGlError();
 
         glUseProgram(program);
         checkGlError();
@@ -74,8 +87,8 @@ public class GLProgramImpl implements GLProgram {
         glEnableVertexAttribArray(attribTexCoords);
         checkGlError();
 
-        /*glUniform1i(uniformTexture, texture);
-        checkGlError();*/
+        glUniform1i(uniformTexture, texture);
+        checkGlError();
     }
 
     private int buildProgram(String vertex, String fragment) {
@@ -129,9 +142,35 @@ public class GLProgramImpl implements GLProgram {
         return shader;
     }
 
+    private int loadTexture(int resource) {
+        int[] textures = new int[1];
 
-    @Override public void drawFrame(GLEngine glEngine) {
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glActiveTexture(GL_TEXTURE0);
+        glGenTextures(1, textures, 0);
+        checkGlError();
+
+        int texture = textures[0];
+        glBindTexture(GL_TEXTURE_2D, texture);
+        checkGlError();
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), resource);
+
+        GLUtils.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bitmap, GL_UNSIGNED_BYTE, 0);
+        checkGlError();
+
+        bitmap.recycle();
+
+        return texture;
+    }
+
+    @Override public void drawFrame(GLEngine glEngine, long currentTime) {
+        glClearColor(1.0f, 1.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // drawQuad
@@ -145,8 +184,8 @@ public class GLProgramImpl implements GLProgram {
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-        if (!glEngine.egl.eglSwapBuffers(glEngine.eglDisplay, glEngine.eglSurface)) {
-            throw new RuntimeException("Cannot swap buffers");
+        if(glEngine != null) {
+            glEngine.swapBuffers();
         }
     }
 
@@ -154,6 +193,9 @@ public class GLProgramImpl implements GLProgram {
 
     }
 
+    @Override public void onSizeChanged(GLEngine glEngine) {
+        glEngine.applyFulSizedViewport();
+    }
 
     private static void checkGlError() {
         int error = glGetError();

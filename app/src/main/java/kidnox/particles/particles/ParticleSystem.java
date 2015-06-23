@@ -83,6 +83,7 @@ public class ParticleSystem {
     }
 
     public void draw() {
+
         /*gl.glVertexPointer(3, GL10.GL_FLOAT, 0, mVertexBuffer);
         for (int i = 0; i < PARTICLECOUNT; i++) {
             Particle particle = mParticles[i];
@@ -120,9 +121,8 @@ public class ParticleSystem {
     }
 
     // update the particle system, move everything
-    public void update(SurfaceConfig surfaceConfig) {
+    public void update(SurfaceConfig surfaceConfig, long currentTime) {
         // calculate time between frames in seconds
-        long currentTime = System.currentTimeMillis();
         float timeFrame = (currentTime - lastTime) / 1000f;
         // replace the last time with the current time.
         lastTime = currentTime;

@@ -20,6 +20,7 @@ public class DrawingLoop extends Thread {
     private volatile boolean isPausing;
 
     public DrawingLoop(GLProgram glProgram) {
+        super("DrawingLoop");
         if(glProgram == null) throw new NullPointerException();
         this.glProgram = glProgram;
         setUncaughtExceptionHandler(new ExceptionHandler());
@@ -70,16 +71,20 @@ public class DrawingLoop extends Thread {
         final int frameDuration = 1000 / FPS;
         isPausing = false;
         while (isRunning) {
-            if(isPausing) {
-                nextFrameAvailable.drainPermits();
-                nextFrameAvailable.acquire();
+            synchronized (this) {
                 if(!isRunning) return;
-            }
-            long startTime = System.currentTimeMillis();
-            glProgram.drawFrame(glEngine);
-            long deltaTime = frameDuration - Math.abs(System.currentTimeMillis() - startTime);
-            if(deltaTime > 0) {
-                Thread.sleep(deltaTime);
+                if(isPausing) {
+                    nextFrameAvailable.drainPermits();
+                    nextFrameAvailable.acquire();
+                    if(!isRunning) return;
+                }
+                long startTime = System.currentTimeMillis();
+                glProgram.drawFrame(glEngine, startTime);
+                glEngine.swapBuffers();
+                long deltaTime = frameDuration - (System.currentTimeMillis() - startTime);
+                if(deltaTime > 0) {
+                    Thread.sleep(deltaTime);
+                }
             }
         }
     }

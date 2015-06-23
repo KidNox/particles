@@ -20,6 +20,10 @@ public class GLTextureView extends TextureView {
         super(context, attrs, defStyleAttr);
     }
 
+    {
+        //setOpaque(false);
+    }
+
     @Override protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         renderer = null;
@@ -41,5 +45,9 @@ public class GLTextureView extends TextureView {
         if(renderer == null) throw new NullPointerException();
         this.renderer = renderer;
         setSurfaceTextureListener(renderer);
+    }
+
+    public void setGLProgram(GLProgram glProgram) {
+        setTextureRenderer(new TextureRenderer(glProgram));
     }
 }

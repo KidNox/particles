@@ -10,8 +10,32 @@ public class TextureRenderer implements TextureView.SurfaceTextureListener {
 
     private DrawingLoop drawingLoop;
 
-    public TextureRenderer(GLProgram glProgram) {
-        this.glProgram = glProgram;
+    public TextureRenderer(final GLProgram _glProgram) {
+        if(BuildConfig.DEBUG) {
+            this.glProgram = new GLProgram() { //debug proxy
+                @Override public void onBegin(GLEngine glEngine) {
+                    checkThread("onBegin");
+                    _glProgram.onBegin(glEngine);
+                }
+
+                @Override public void drawFrame(GLEngine glEngine, long currentTime) {
+                    //checkThread("drawFrame");
+                    _glProgram.drawFrame(glEngine, currentTime);
+                }
+
+                @Override public void onEnd(GLEngine glEngine) {
+                    checkThread("onEnd");
+                    _glProgram.onEnd(glEngine);
+                }
+
+                @Override public void onSizeChanged(GLEngine glEngine) {
+                    checkThread("onSizeChanged");
+                    _glProgram.onSizeChanged(glEngine);
+                }
+            };
+        } else {
+            this.glProgram = _glProgram;
+        }
     }
 
     @Override public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
@@ -54,6 +78,12 @@ public class TextureRenderer implements TextureView.SurfaceTextureListener {
 
     static void log(Object message) {
         Log.d("TextureRenderer", String.valueOf(message));
+    }
+
+    void checkThread(String methodName) {
+        if(!"DrawingLoop".equals(Thread.currentThread().getName())) {
+            throw new IllegalStateException("wrong thread for opengl program, method = " + methodName + ", expected thread = "+drawingLoop + ", actual = "+Thread.currentThread());
+        }
     }
 
 }
