@@ -3,28 +3,33 @@ package kidnox.particles;
 import android.graphics.SurfaceTexture;
 import android.util.Log;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 
 
-public class DrawingLoop extends Thread implements SurfaceTexture.OnFrameAvailableListener {
+public class DrawingLoop extends Thread {
 
-    private volatile boolean initialized;
-    private volatile boolean isRunning;
-    private final CountDownLatch nextFrameAvailable = new CountDownLatch(1);
+    public static int FPS = 60;
 
+    private final GLProgram glProgram;
     private SurfaceTexture surface;
+    private SurfaceConfig surfaceConfig;
 
-    {
+    private final Semaphore nextFrameAvailable = new Semaphore(0);
+
+    private volatile boolean isRunning;
+    private volatile boolean isPausing;
+
+    public DrawingLoop(GLProgram glProgram) {
+        if(glProgram == null) throw new NullPointerException();
+        this.glProgram = glProgram;
         setUncaughtExceptionHandler(new ExceptionHandler());
     }
 
-    public void enter(SurfaceTexture surface) {
-        if(this.surface != null) throw new IllegalStateException();
+    public synchronized void enter(SurfaceTexture surface, SurfaceConfig surfaceConfig) {
+        if(this.surface != null) throw new NullPointerException();
+        if(this.surfaceConfig != null) throw new NullPointerException();
         this.surface = surface;
-    }
-
-    @Override public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-        nextFrameAvailable.countDown();
+        this.surfaceConfig = surfaceConfig;
     }
 
     public synchronized void startLoop() {
@@ -32,45 +37,68 @@ public class DrawingLoop extends Thread implements SurfaceTexture.OnFrameAvailab
         start();
     }
 
-    private synchronized void lazyInit() {
-        if(surface == null) throw new NullPointerException();
-        initialized = true;
+    private synchronized GLEngine lazyInit() {
+        return new GLEngine(glProgram, surface, surfaceConfig);
     }
 
     public synchronized void exit() {
+        Log.d("DrawingLoop", "exit");
         isRunning = false;
+        nextFrameAvailable.release();
     }
 
-    protected void onReleaseResources() {
-        if(surface != null) {
-            surface.setOnFrameAvailableListener(null);
-            surface = null;
-        }
+    protected void onReleaseResources(GLEngine glEngine) {
+        Log.d("DrawingLoop", "onReleaseResources");
+        glEngine.destroy();
+        surface = null;
     }
 
     @Override public void run() {
-        if(!initialized) {
-            lazyInit();
-        }
+        GLEngine glEngine = lazyInit();
+        glProgram.onBegin(glEngine);
         try {
-            loop();
+            loop(glEngine);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
-            onReleaseResources();
+            glProgram.onEnd(glEngine);
+            onReleaseResources(glEngine);
         }
     }
 
-    private void loop() throws InterruptedException {
+    private void loop(GLEngine glEngine) throws InterruptedException {
+        final int frameDuration = 1000 / FPS;
+        isPausing = false;
         while (isRunning) {
-            nextFrameAvailable.await();
-            if(!isRunning) return;
-            drawFrame();
+            if(isPausing) {
+                nextFrameAvailable.drainPermits();
+                nextFrameAvailable.acquire();
+                if(!isRunning) return;
+            }
+            long startTime = System.currentTimeMillis();
+            glProgram.drawFrame(glEngine);
+            long deltaTime = frameDuration - Math.abs(System.currentTimeMillis() - startTime);
+            if(deltaTime > 0) {
+                Thread.sleep(deltaTime);
+            }
         }
     }
 
-    protected synchronized void drawFrame() {
+    public final void onPause() {
+        if(isRunning) {
+            isPausing = true;
+        }
+    }
 
+    public final void onResume() {
+        if(isRunning) {
+            isPausing = false;
+            nextFrameAvailable.release();
+        }
+    }
+
+    public SurfaceConfig getSurfaceConfig() {
+        return surfaceConfig;
     }
 
     static class ExceptionHandler implements UncaughtExceptionHandler {
