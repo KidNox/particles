@@ -7,8 +7,7 @@ import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import kidnox.particles.particles.GLParticleProgram;
-import kidnox.particles.sample.ParticleProgram;
+import kidnox.particles.sample.BlackHoleParticleProgram;
 import kidnox.particles.test.GLSurfaceViewExt;
 
 
@@ -30,11 +29,20 @@ public class MainActivity extends Activity {
                 super.onMeasure(widthMeasureSpec, widthMeasureSpec);
             }
         };
-        glTextureView.setGLProgram(new ParticleProgram(this));
+        glTextureView.setGLProgram(new BlackHoleParticleProgram(this));
         frameLayout.addView(glTextureView, lp);
         /*glSurfaceViewExt = new GLSurfaceViewExt(this);
         glSurfaceViewExt.setGlProgram(new GLProgramImpl(this));
         frameLayout.addView(glSurfaceViewExt);*/
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        glTextureView.onResume();
+    }
+
+    @Override protected void onPause() {
+        super.onPause();
+        glTextureView.onPause();
+    }
 }

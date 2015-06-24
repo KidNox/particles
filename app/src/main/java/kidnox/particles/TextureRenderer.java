@@ -61,6 +61,7 @@ public class TextureRenderer implements TextureView.SurfaceTextureListener {
         log("onSurfaceTextureDestroyed");
         if (drawingLoop != null) {
             drawingLoop.exit();
+            drawingLoop = null;
         }
         return true;
     }

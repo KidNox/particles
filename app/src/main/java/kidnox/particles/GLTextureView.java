@@ -29,7 +29,7 @@ public class GLTextureView extends TextureView {
         renderer = null;
     }
 
-    /*public void onResume() {
+    public void onResume() {
         if(renderer != null) {
             renderer.onResume();
         }
@@ -39,7 +39,7 @@ public class GLTextureView extends TextureView {
         if(renderer != null) {
             renderer.onPause();
         }
-    }*/
+    }
 
     public void setTextureRenderer(TextureRenderer renderer) {
         if(renderer == null) throw new NullPointerException();

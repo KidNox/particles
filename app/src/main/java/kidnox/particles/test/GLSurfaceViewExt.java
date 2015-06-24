@@ -7,9 +7,7 @@ import android.util.AttributeSet;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import kidnox.particles.DrawingLoop;
 import kidnox.particles.GLProgram;
-import kidnox.particles.GLProgramImpl;
 
 public class GLSurfaceViewExt extends GLSurfaceView {
 
