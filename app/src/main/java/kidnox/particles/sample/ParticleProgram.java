@@ -3,6 +3,7 @@ package kidnox.particles.sample;
 import android.content.Context;
 import android.graphics.Color;
 import android.opengl.GLES20;
+import android.util.Log;
 
 import static android.opengl.GLES20.*;
 
@@ -18,31 +19,61 @@ import kidnox.particles.util.GLHelper;
 public class ParticleProgram implements GLProgram {
 
     private static final int pointSize = 10;
+    private static final float holeSize = 0.5f;
 
     int iProgId;
-    int iPosition;
     int iTexture;
-    int iColor;
     int iTexId;
-    int iMove;
-    int iTimes;
-    int iLife, iAge;
-    int iSize;
-    float[] fVertex = {0,0,0};
-    FloatBuffer vertexBuffer;
+
+    int iColor;
+    int iRadius;
+    int iRing;
+    int iRand;
+
+    /*
+    attribute float a_radius;
+attribute float a_ring;
+attribute float a_rand;
+    * */
+
+    /*
+
+Space.prototype.moveParticle = function (p) {
+        p.ring = Math.max(p.ring - 1, this.r);
+        p.random += p.move;
+        p.x = Math.cos(p.random + Math.PI) * p.ring;
+        p.y = Math.sin(p.random + Math.PI) * p.ring;
+    };
+
+Space.prototype.resetParticle = function (p) {
+        p.ring = Math.random() * this.r * 3;
+        p.radius = Math.random() * 5;
+    };
+    Space.prototype.disappear = function (p) {
+        if (p.radius < 0.8) {
+            this.resetParticle(p);
+        }
+        p.radius *= 0.994;
+    };
+    Space.prototype.draw = function (p) {
+        this.ctx.beginPath();
+        this.ctx.fillStyle = p.color;
+        this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        this.ctx.fill();
+    };
+
+
+*/
 
     final Context context;
     ParticleSystem particleSystem;
 
     public ParticleProgram(Context context) {
         this.context = context;
-
     }
 
     @Override public void onBegin(GLEngine glEngine) {
         particleSystem = new ParticleSystem();
-        vertexBuffer = ByteBuffer.allocateDirect(fVertex.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        vertexBuffer.put(fVertex).position(0);
 
         glClearColor(0, 0, 0, 1);
         glDisable(GL_DEPTH_TEST);
@@ -54,38 +85,36 @@ public class ParticleProgram implements GLProgram {
 
         iProgId = GLHelper.linkProgram(vertexShader, fragmentShader);
         iTexId = GLHelper.loadPoint(pointSize, Color.GREEN);
-
-        iPosition = glGetAttribLocation(iProgId, "a_position");
         iTexture = glGetUniformLocation(iProgId, "u_texture");
+
         iColor = glGetAttribLocation(iProgId, "a_color");
-        iMove = glGetAttribLocation(iProgId, "a_move");
-        iTimes = glGetUniformLocation(iProgId, "u_time");
-        iLife = glGetAttribLocation(iProgId, "a_life");
-        iAge = glGetAttribLocation(iProgId, "a_age");
+        iRadius = glGetAttribLocation(iProgId, "a_radius");
+        iRing = glGetAttribLocation(iProgId, "a_ring");
+        iRand = glGetAttribLocation(iProgId, "a_rand");
 
-        iSize = glGetUniformLocation(iProgId, "u_size");
-
-
-        particleSystem.init(0, 0, 0);
-
+        particleSystem.init();
     }
 
     @Override public void drawFrame(GLEngine glEngine, long currentTime) {
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(iProgId);
-        glUniform1f(iSize, pointSize);
-                /*GLES20.glVertexAttribPointer(iPosition, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer);
-                GLES20.glEnableVertexAttribArray(iPosition);*/
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, iTexId);
 
-
         glUniform1i(iTexture, 0);
-//              GLES20.glUniform4f(iColor, 0.5f, 1f, 0.5f, 1f);
 
-        particleSystem.update(iPosition, iMove, iTimes, iColor, iLife, iAge);
+        //fVertices[i*PARTICLE_SIZE + 4] = ((gen.nextFloat() * 4) + 1) / 100;
+        //fVertices[i*PARTICLE_SIZE + 5] = gen.nextFloat() * 7;
+
+        particleSystem.update(iColor, iRadius, iRing, iRand);
+        if(!requestedLog) {
+            requestedLog = true;
+            Log.d("GL", "gl errors = "+glGetProgramInfoLog(iProgId));
+        }
     }
+
+    boolean requestedLog;
 
     @Override public void onEnd(GLEngine glEngine) {
 

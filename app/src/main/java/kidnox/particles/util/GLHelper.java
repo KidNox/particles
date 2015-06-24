@@ -62,7 +62,7 @@ public class GLHelper {
             // If it failed, delete the shader object.
             glDeleteShader(shaderObjectId);
             if (BuildConfig.DEBUG) {
-                Log.w("GLHelper", "Compilation of shader failed.");
+                Log.w("GLHelper", "Compilation of shader failed." + glGetError());
             }
             return 0;
         }
@@ -106,6 +106,7 @@ public class GLHelper {
             return 0;
         }
         // Return the program object ID.
+        validateProgram(programObjectId);
         return programObjectId;
     }
 
