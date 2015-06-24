@@ -18,7 +18,7 @@ import static android.opengl.GLES20.*;
 
 public class BlackHoleParticleProgram implements GLProgram {
 
-    final static int NUM_PARTICLES = 1200;
+    final static int NUM_PARTICLES = 2000;
     final static int PARTICLE_SIZE = 9;// with colors
     //each particle contains
     final float[] fVertices = new float[NUM_PARTICLES * PARTICLE_SIZE];
@@ -51,7 +51,7 @@ public class BlackHoleParticleProgram implements GLProgram {
 
     @Override public void onBegin(GLEngine glEngine) {
         vertexBuffer = ByteBuffer.allocateDirect(fVertices.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        glClearColor(0, 0, 0, 1);
+        glClearColor(0, 0, 0, 0);
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -60,7 +60,7 @@ public class BlackHoleParticleProgram implements GLProgram {
         int fragmentShader = GLHelper.compileFragmentShader(context, R.raw.particle_fragment);
 
         iProgId = GLHelper.linkProgram(vertexShader, fragmentShader);
-        iTexId = GLHelper.loadPoint(pointSize, Color.GREEN);
+        iTexId = GLHelper.loadPoint(pointSize, context.getResources().getColor(R.color.green));
         iTexture = glGetUniformLocation(iProgId, "u_texture");
 
         pu_hole_r = glGetUniformLocation(iProgId, "u_hole_r");
@@ -77,9 +77,9 @@ public class BlackHoleParticleProgram implements GLProgram {
 
         for (int i = 0; i < NUM_PARTICLES; i++) {
             //r,g,b,a
-            fVertices[i*PARTICLE_SIZE + 0] = 0;
-            fVertices[i*PARTICLE_SIZE + 1] = gen.nextFloat();
-            fVertices[i*PARTICLE_SIZE + 2] = 0;
+            fVertices[i*PARTICLE_SIZE + 0] = 1;
+            fVertices[i*PARTICLE_SIZE + 1] = 1;
+            fVertices[i*PARTICLE_SIZE + 2] = 1;
             fVertices[i*PARTICLE_SIZE + 3] = gen.nextFloat();
 
             fVertices[i*PARTICLE_SIZE + 4] = rnd(0.2f, 0.5f) * 1000;//life

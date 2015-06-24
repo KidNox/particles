@@ -4,6 +4,8 @@ import android.graphics.SurfaceTexture;
 import android.util.Log;
 import android.view.TextureView;
 
+import kidnox.particles.util.DebugUtil;
+
 public class TextureRenderer implements TextureView.SurfaceTextureListener {
 
     private final GLProgram glProgram;
@@ -11,7 +13,7 @@ public class TextureRenderer implements TextureView.SurfaceTextureListener {
     private DrawingLoop drawingLoop;
 
     public TextureRenderer(final GLProgram _glProgram) {
-        if(BuildConfig.DEBUG) {
+        if(DebugUtil.DEBUG) {
             this.glProgram = new GLProgram() { //debug proxy
                 @Override public void onBegin(GLEngine glEngine) {
                     checkThread("onBegin");

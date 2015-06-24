@@ -35,16 +35,6 @@ float rand;
 float ring;
 float radius;
 
-/*float noice(float x, float y) {
-    float a = 12.9898;
-    float b = 78.233;
-    float c = 43758.5453;
-    float dt= dot(vec2(x, y), vec2(a,b));
-    float sn= mod(dt, PI);
-    float lastRnd = fract(sin(sn) * c);
-    return lastRnd;
-}*/
-
 float time;
 void main()
 {
@@ -53,15 +43,15 @@ void main()
     ring = a_ring;
     radius = a_radius;
 
-    time = sin(u_elapsedTime / (a_life * 15.0)) * a_life;
+    time = sin(u_elapsedTime / (a_life * 120.0)) * a_life;
     if(time < 0.0) {
         time = -time;
     }
 
-    rand += time * a_move;
+    rand += time * a_move / PI;
 
-    radius -= time / a_life;
-    ring -= time / (a_life * 1.0);
+    radius -= (time * PI) / a_life;
+    ring -= time / (a_life * PI);
 
     if(radius < cMinRadius) {
         radius = a_radius;
@@ -72,7 +62,7 @@ void main()
     }
 
     gl_PointSize = radius * u_scale;
-    gl_Position.x = cos(rand / 3.0) * ring;
-    gl_Position.y = sin(rand) * ring;
+    gl_Position.x = cos(rand / (PI * PI)) * ring;
+    gl_Position.y = sin(rand * PI) * ring;
     gl_Position.w = 1.0;
 }

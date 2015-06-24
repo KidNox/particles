@@ -6,14 +6,12 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.opengl.GLUtils;
-import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import kidnox.particles.BuildConfig;
 
 import static android.opengl.GLES20.*;
 
@@ -40,9 +38,7 @@ public class GLHelper {
         // Create a new shader object.
         final int shaderObjectId = glCreateShader(type);
         if (shaderObjectId == 0) {
-            if (BuildConfig.DEBUG) {
-                Log.w("GLHelper", "Could not create new shader.");
-            }
+            DebugUtil.warn("Could not create new shader.");
             return 0;
         }
         // Pass in the shader source.
@@ -52,18 +48,12 @@ public class GLHelper {
         // Get the compilation status.
         final int[] compileStatus = new int[1];
         glGetShaderiv(shaderObjectId, GL_COMPILE_STATUS, compileStatus, 0);
-
-        if (BuildConfig.DEBUG) {
-            // Print the shader info log to the Android log output.
-            Log.v("GLHelper", "Results of compiling source:" + "\n" + shaderCode + "\n:" + glGetShaderInfoLog(shaderObjectId));
-        }
+        DebugUtil.verbose("Results of compiling source: \n %s \n: %s", shaderCode, glGetShaderInfoLog(shaderObjectId));
         // Verify the compile status.
         if (compileStatus[0] == 0) {
             // If it failed, delete the shader object.
             glDeleteShader(shaderObjectId);
-            if (BuildConfig.DEBUG) {
-                Log.w("GLHelper", "Compilation of shader failed." + glGetError());
-            }
+            DebugUtil.warn("Compilation of shader failed." + glGetError());
             return 0;
         }
         // Return the shader object ID.
@@ -78,9 +68,7 @@ public class GLHelper {
         // Create a new program object.
         final int programObjectId = glCreateProgram();
         if (programObjectId == 0) {
-            if (BuildConfig.DEBUG) {
-                Log.w("GLHelper", "Could not create new program");
-            }
+            DebugUtil.warn("Could not create new program");
             return 0;
         }
         // Attach the vertex shader to the program.
@@ -92,17 +80,12 @@ public class GLHelper {
         // Get the link status.
         final int[] linkStatus = new int[1];
         glGetProgramiv(programObjectId, GL_LINK_STATUS, linkStatus, 0);
-        if (BuildConfig.DEBUG) {
-            // Print the program info log to the Android log output.
-            Log.v("GLHelper", "Results of linking program:\n" + glGetProgramInfoLog(programObjectId));
-        }
+        DebugUtil.verbose("Results of linking program:\n %s", glGetProgramInfoLog(programObjectId));
         // Verify the link status.
         if (linkStatus[0] == 0) {
             // If it failed, delete the program object.
             glDeleteProgram(programObjectId);
-            if (BuildConfig.DEBUG) {
-                Log.w("GLHelper", "Linking of program failed.");
-            }
+            DebugUtil.warn("Linking of program failed.");
             return 0;
         }
         // Return the program object ID.
@@ -118,7 +101,7 @@ public class GLHelper {
         glValidateProgram(programObjectId);
         final int[] validateStatus = new int[1];
         glGetProgramiv(programObjectId, GL_VALIDATE_STATUS, validateStatus, 0);
-        Log.v("GLHelper", "Results of validating program: " + validateStatus[0] + "\nLog:" + glGetProgramInfoLog(programObjectId));
+        DebugUtil.verbose("Results of validating program: %s, \nLog:", validateStatus[0], glGetProgramInfoLog(programObjectId));
         return validateStatus[0] != 0;
     }
 
@@ -132,10 +115,7 @@ public class GLHelper {
         glGenTextures(1, textureObjectIds, 0);
 
         if (textureObjectIds[0] == 0) {
-            if (BuildConfig.DEBUG) {
-                Log.w("GLHelper", "Could not generate a new OpenGL texture object.");
-            }
-
+            DebugUtil.warn("Could not generate a new OpenGL texture object.");
             return 0;
         }
         // Bind to the texture in OpenGL

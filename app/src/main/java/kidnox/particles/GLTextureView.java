@@ -21,7 +21,7 @@ public class GLTextureView extends TextureView {
     }
 
     {
-        //setOpaque(false);
+        setOpaque(false);
     }
 
     @Override protected void onDetachedFromWindow() {
