@@ -21,14 +21,15 @@ public class BlackHoleParticleProgram implements GLProgram {
     final static int NUM_PARTICLES = 1200;
     final static int PARTICLE_SIZE = 9;// with colors
     //each particle contains
-    float[] fVertices = new float[NUM_PARTICLES * PARTICLE_SIZE];
-    final FloatBuffer vertexBuffer = ByteBuffer.allocateDirect(fVertices.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+    final float[] fVertices = new float[NUM_PARTICLES * PARTICLE_SIZE];
     final Random gen = new Random(System.currentTimeMillis());
 
     private static final float holeSize = 0.5f;
     private static final int pointSize = 13;
 
     private final Context context;
+
+    private FloatBuffer vertexBuffer;
 
     int iProgId;
     int iTexId;
@@ -49,6 +50,7 @@ public class BlackHoleParticleProgram implements GLProgram {
     }
 
     @Override public void onBegin(GLEngine glEngine) {
+        vertexBuffer = ByteBuffer.allocateDirect(fVertices.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
         glClearColor(0, 0, 0, 1);
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);

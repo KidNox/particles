@@ -69,20 +69,17 @@ public class DrawingLoop extends Thread {
         final int frameDuration = 1000 / glProgram.getMaxFPS();
         isPausing = false;
         while (isRunning) {
-            synchronized (this) {
+            if(isPausing) {
+                nextFrameAvailable.drainPermits();
+                nextFrameAvailable.acquire();
                 if(!isRunning) return;
-                if(isPausing) {
-                    nextFrameAvailable.drainPermits();
-                    nextFrameAvailable.acquire();
-                    if(!isRunning) return;
-                }
-                long startTime = System.currentTimeMillis();
-                glProgram.drawFrame(glEngine, startTime);
-                glEngine.swapBuffers();
-                long deltaTime = frameDuration - (System.currentTimeMillis() - startTime);
-                if(deltaTime > 0) {
-                    Thread.sleep(deltaTime);
-                }
+            }
+            long startTime = System.currentTimeMillis();
+            glProgram.drawFrame(glEngine, startTime);
+            glEngine.swapBuffers();
+            long deltaTime = frameDuration - (System.currentTimeMillis() - startTime);
+            if(deltaTime > 0) {
+                Thread.sleep(deltaTime);
             }
         }
     }
