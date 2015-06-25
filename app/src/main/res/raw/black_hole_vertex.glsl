@@ -1,79 +1,69 @@
 precision mediump float;
-
-//consts(init)
 #define PI 3.1415
-#define cRand 7
-#define cRing 3
-#define cRadius 5
-#define cMinRadius 0.15
-#define cHole 0.5
-
-//increments(diff)
-#define dRing 0.002
-#define dRadius 0.994
 
 //const
 uniform float u_hole_r;
 uniform float u_scale;
 
+uniform float u_velocityDivider;
+uniform float u_angleMultiplier;
+uniform float u_rMultiplier;
+uniform float u_rInitialMultiplier;
+uniform float u_xMultiplier;
+uniform float u_yMultiplier;
+
+uniform float u_ringOffsetMultiplier;
+
 //mutable
-uniform float u_elapsedTime;
+uniform float u_elapsedTime;// +=1 for frame
 
 attribute vec4 a_color;
 
 //init state
-attribute float a_life; //200 ... 500 frames
-attribute float a_rand;
+attribute float a_timeOffset;
+attribute float a_life; //based on radius
+attribute float a_angle;
 attribute float a_ring;
 attribute float a_radius;
-attribute float a_move;
+attribute float a_velocity;
 
 varying vec4 v_color;
 
-
-float rand;
+float angle;
 float ring;
 float radius;
 
+float elapsedTime;
 float time;
 void main()
 {
     v_color = a_color;
-    rand = a_rand;
-    ring = a_ring;
-    radius = a_radius;
+    angle = a_angle * u_angleMultiplier;
+    ring = a_ring * u_ringOffsetMultiplier;
+    radius = a_radius * u_rInitialMultiplier;
+    elapsedTime = u_elapsedTime + a_timeOffset;
 
-    float fractTime = fract(u_elapsedTime / a_life);
+    float previousTime = fract((elapsedTime - 1.0) / a_life);
+    time = fract(elapsedTime / a_life);
 
-    time = fractTime;
-    if(time < 0.0) {
-        time = -time;
+    float frames = time * a_life;
+
+    //check reset
+    if(previousTime > time) {
+        radius = a_radius * u_rInitialMultiplier;
+        ring = a_ring * u_ringOffsetMultiplier;
+    } else {
+        radius *= pow(u_rMultiplier, frames);
+        ring -= time / a_life;
     }
-
-    rand += time * a_move;
-
-    float sinTime = sin(u_elapsedTime / (a_life * 15.0));
-
-    radius -= abs(sinTime);
-
-    if(radius < cMinRadius) {
-        radius = a_radius;
-        ring = a_ring;
-    }
-
-    ring -= time * radius;
-
-    float a;
     if(ring < u_hole_r) {
         ring = u_hole_r;
-        a = 3.0;
-    } else {
-        a = PI * (sin(ring - u_hole_r) + (PI / 2.0));
     }
 
+    angle += (frames + u_elapsedTime) * a_velocity / u_velocityDivider;
 
     gl_PointSize = radius * u_scale;
-    gl_Position.x = cos(rand / a) * ring;
-    gl_Position.y = sin(rand) * ring;
+    gl_Position.x = cos(angle * u_xMultiplier) * ring;
+    gl_Position.y = sin(angle * u_yMultiplier) * ring;
     gl_Position.w = 1.0;
 }

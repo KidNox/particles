@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import kidnox.particles.sample.BlackHoleParticleProgram;
+import kidnox.particles.R;
 import kidnox.particles.test.GLSurfaceViewExt;
 
 

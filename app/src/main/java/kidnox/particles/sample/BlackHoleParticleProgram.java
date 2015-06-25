@@ -1,8 +1,6 @@
 package kidnox.particles.sample;
 
 import android.content.Context;
-import android.graphics.Color;
-import android.opengl.GLES20;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -18,14 +16,28 @@ import static android.opengl.GLES20.*;
 
 public class BlackHoleParticleProgram implements GLProgram {
 
-    final static int NUM_PARTICLES = 1100;
-    final static int PARTICLE_SIZE = 9;// with colors
-    //each particle contains
+    final static int NUM_PARTICLES = 2000;
+    final static int PARTICLE_SIZE = 10;// with colors
     final float[] fVertices = new float[NUM_PARTICLES * PARTICLE_SIZE];
     final Random gen = new Random(System.currentTimeMillis());
 
+    private static final float velocityFactor = 1f;
+
+    private static final float initialOffset = 1f;
+    private static final float ringOffset = 0.23f;
     private static final float holeSize = 0.5f;
-    private static final int pointSize = 15;
+    private static final int pointSize = 18;
+
+    private static final float minParticleRadius = 0.1f;
+
+    private static final float velocityDivider = 800f;
+
+    private static final float angleMultiplier = (float) (18f * Math.PI);
+    private static final float rMultiplier = 0.994f;
+    private static final float rInitialMultiplier = 1f;
+
+    private static final float xMultiplier = 1f / 2.4f;
+    private static final float yMultiplier = 1f / 1.8f;
 
     private final Context context;
 
@@ -38,12 +50,20 @@ public class BlackHoleParticleProgram implements GLProgram {
     int pu_hole_r;
     int pu_scale;
     int pu_elapsedTime;
+    int pu_velocityDivider;
+    int pu_angleMultiplier;
+    int pu_rMultiplier;
+    int pu_rInitialMultiplier;
+    int pu_xMultiplier;
+    int pu_yMultiplier;
+    int pu_ringOffsetMultiplier;
+    int pa_timeOffset;
     int pa_color;
-    int pa_life;//200 ... 500 frames
-    int pa_rand;
+    int pa_life;//based on particle radius
+    int pa_angle;
     int pa_ring;
     int pa_radius;
-    int pa_move;
+    int pa_velocity;
 
     public BlackHoleParticleProgram(Context context) {
         this.context = context;
@@ -65,14 +85,22 @@ public class BlackHoleParticleProgram implements GLProgram {
 
         pu_hole_r = glGetUniformLocation(iProgId, "u_hole_r");
         pu_scale = glGetUniformLocation(iProgId, "u_scale");
+        pu_velocityDivider = glGetUniformLocation(iProgId, "u_velocityDivider");
+        pu_angleMultiplier = glGetUniformLocation(iProgId, "u_angleMultiplier");
+        pu_rMultiplier = glGetUniformLocation(iProgId, "u_rMultiplier");
+        pu_rInitialMultiplier = glGetUniformLocation(iProgId, "u_rInitialMultiplier");
+        pu_xMultiplier = glGetUniformLocation(iProgId, "u_xMultiplier");
+        pu_yMultiplier = glGetUniformLocation(iProgId, "u_yMultiplier");
+        pu_ringOffsetMultiplier = glGetUniformLocation(iProgId, "u_ringOffsetMultiplier");
         pu_elapsedTime = glGetUniformLocation(iProgId, "u_elapsedTime");
 
+        pa_timeOffset = glGetAttribLocation(iProgId, "a_timeOffset");
         pa_color = glGetAttribLocation(iProgId, "a_color");
         pa_life = glGetAttribLocation(iProgId, "a_life");
-        pa_rand = glGetAttribLocation(iProgId, "a_rand");
+        pa_angle = glGetAttribLocation(iProgId, "a_angle");
         pa_ring = glGetAttribLocation(iProgId, "a_ring");
         pa_radius = glGetAttribLocation(iProgId, "a_radius");
-        pa_move = glGetAttribLocation(iProgId, "a_move");
+        pa_velocity = glGetAttribLocation(iProgId, "a_velocity");
 
 
         for (int i = 0; i < NUM_PARTICLES; i++) {
@@ -80,24 +108,40 @@ public class BlackHoleParticleProgram implements GLProgram {
             fVertices[i*PARTICLE_SIZE + 0] = rnd(0.33f, 1);
             fVertices[i*PARTICLE_SIZE + 1] = rnd(0.33f, 1);
             fVertices[i*PARTICLE_SIZE + 2] = rnd(0.33f, 1);
-            fVertices[i*PARTICLE_SIZE + 3] = gen.nextFloat() > 0.5 ? 0.55f : 1;
+            fVertices[i*PARTICLE_SIZE + 3] = gen.nextFloat() /*> 0.5 ? 0.4f : 1*/;
 
-            fVertices[i*PARTICLE_SIZE + 4] = (gen.nextFloat() + 0.88f) * 280;//life
-            fVertices[i*PARTICLE_SIZE + 5] = gen.nextFloat() * 60;//rand
-            fVertices[i*PARTICLE_SIZE + 6] = (gen.nextFloat() + 0.5f) / 1.24f;//ring
-            fVertices[i*PARTICLE_SIZE + 7] = (gen.nextFloat() + 0.5f) / 1.5f;//radius
-            fVertices[i*PARTICLE_SIZE + 8] = (gen.nextFloat() * 6f + 6f) / 600;//move
+            float radius = (gen.nextFloat() + 0.66f) / 1.66f;
+            float life = GLHelper.logBase(rMultiplier, minParticleRadius / radius);//log base rMultiplier
+            fVertices[i*PARTICLE_SIZE + 7] = radius;
+            fVertices[i*PARTICLE_SIZE + 4] = (int)life;
+
+            fVertices[i*PARTICLE_SIZE + 5] = gen.nextFloat();//angle
+            fVertices[i*PARTICLE_SIZE + 6] = (gen.nextFloat() + ringOffset) / (1f + ringOffset);//ring
+            fVertices[i*PARTICLE_SIZE + 8] = gen.nextFloat() * 4f + 1f;//velocity
+
+            fVertices[i*PARTICLE_SIZE + 9] = gen.nextInt(NUM_PARTICLES);//time offset
         }
         vertexBuffer.put(fVertices).position(0);
     }
 
-    int elapsedTime = 0;
+    int elapsedTime = 1;
 
     @Override public void drawFrame(GLEngine glEngine, long currentTime) {
         elapsedTime++;
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(iProgId);
         glUniform1f(pu_scale, pointSize);
+        glUniform1f(pu_velocityDivider, velocityDivider);
+        glUniform1f(pu_angleMultiplier, angleMultiplier);
+        glUniform1f(pu_rMultiplier, rMultiplier);
+        glUniform1f(pu_rInitialMultiplier, rInitialMultiplier);
+        glUniform1f(pu_xMultiplier, xMultiplier);
+        glUniform1f(pu_yMultiplier, yMultiplier);
+        glUniform1f(pu_ringOffsetMultiplier, initialOffset);
+
+        glUniform1f(pu_elapsedTime, elapsedTime);
+        glUniform1f(pu_scale, pointSize);
+        glUniform1f(pu_hole_r, holeSize);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, iTexId);
@@ -105,34 +149,34 @@ public class BlackHoleParticleProgram implements GLProgram {
         glUniform1i(iTexture, 0);
 
         vertexBuffer.position(0);
-        GLES20.glVertexAttribPointer(pa_color, 4, GLES20.GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
-        GLES20.glEnableVertexAttribArray(pa_color);
+        glVertexAttribPointer(pa_color, 4, GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
+        glEnableVertexAttribArray(pa_color);
 
         vertexBuffer.position(4);
-        GLES20.glVertexAttribPointer(pa_life, 1, GLES20.GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
-        GLES20.glEnableVertexAttribArray(pa_life);
+        glVertexAttribPointer(pa_life, 1, GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
+        glEnableVertexAttribArray(pa_life);
 
         vertexBuffer.position(5);
-        GLES20.glVertexAttribPointer(pa_rand, 1, GLES20.GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
-        GLES20.glEnableVertexAttribArray(pa_rand);
+        glVertexAttribPointer(pa_angle, 1, GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
+        glEnableVertexAttribArray(pa_angle);
 
         vertexBuffer.position(6);
-        GLES20.glVertexAttribPointer(pa_ring, 1, GLES20.GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
-        GLES20.glEnableVertexAttribArray(pa_ring);
+        glVertexAttribPointer(pa_ring, 1, GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
+        glEnableVertexAttribArray(pa_ring);
 
         vertexBuffer.position(7);
-        GLES20.glVertexAttribPointer(pa_radius, 1, GLES20.GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
-        GLES20.glEnableVertexAttribArray(pa_radius);
+        glVertexAttribPointer(pa_radius, 1, GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
+        glEnableVertexAttribArray(pa_radius);
 
-        vertexBuffer.position(7);
-        GLES20.glVertexAttribPointer(pa_move, 1, GLES20.GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
-        GLES20.glEnableVertexAttribArray(pa_move);
+        vertexBuffer.position(8);
+        glVertexAttribPointer(pa_velocity, 1, GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
+        glEnableVertexAttribArray(pa_velocity);
 
-        GLES20.glUniform1f(pu_elapsedTime, elapsedTime);
-        GLES20.glUniform1f(pu_scale, pointSize);
-        GLES20.glUniform1f(pu_hole_r, holeSize);
+        vertexBuffer.position(9);
+        glVertexAttribPointer(pa_timeOffset, 1, GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
+        glEnableVertexAttribArray(pa_timeOffset);
 
-        GLES20.glDrawArrays(GLES20.GL_POINTS, 0, NUM_PARTICLES);
+        glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
     }
 
     @Override public void onEnd(GLEngine glEngine) {
@@ -144,7 +188,7 @@ public class BlackHoleParticleProgram implements GLProgram {
     }
 
     @Override public int getMaxFPS() {
-        return 60;
+        return 30;
     }
 
     public float rnd(float min, float max) {

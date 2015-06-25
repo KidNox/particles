@@ -197,4 +197,8 @@ public class GLHelper {
         return bitmap;
     }
 
+    public static float logBase(float base, float value) {
+        return (float) (Math.log(value) / Math.log(base));
+    }
+
 }
