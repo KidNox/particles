@@ -5,7 +5,7 @@ precision mediump float;
 #define cRand 7
 #define cRing 3
 #define cRadius 5
-#define cMinRadius 0.3
+#define cMinRadius 0.15
 #define cHole 0.5
 
 //increments(diff)
@@ -43,26 +43,37 @@ void main()
     ring = a_ring;
     radius = a_radius;
 
-    time = sin(u_elapsedTime / (a_life * 120.0)) * a_life;
+    float fractTime = fract(u_elapsedTime / a_life);
+
+    time = fractTime;
     if(time < 0.0) {
         time = -time;
     }
 
-    rand += time * a_move / PI;
+    rand += time * a_move;
 
-    radius -= (time * PI) / a_life;
-    ring -= time / (a_life * PI);
+    float sinTime = sin(u_elapsedTime / (a_life * 15.0));
+
+    radius -= abs(sinTime);
 
     if(radius < cMinRadius) {
         radius = a_radius;
         ring = a_ring;
     }
+
+    ring -= time * radius;
+
+    float a;
     if(ring < u_hole_r) {
         ring = u_hole_r;
+        a = 3.0;
+    } else {
+        a = PI * (sin(ring - u_hole_r) + (PI / 2.0));
     }
 
+
     gl_PointSize = radius * u_scale;
-    gl_Position.x = cos(rand / (PI * PI)) * ring;
-    gl_Position.y = sin(rand * PI) * ring;
+    gl_Position.x = cos(rand / a) * ring;
+    gl_Position.y = sin(rand) * ring;
     gl_Position.w = 1.0;
 }

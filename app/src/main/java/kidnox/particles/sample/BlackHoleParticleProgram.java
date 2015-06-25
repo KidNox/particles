@@ -18,14 +18,14 @@ import static android.opengl.GLES20.*;
 
 public class BlackHoleParticleProgram implements GLProgram {
 
-    final static int NUM_PARTICLES = 2000;
+    final static int NUM_PARTICLES = 1100;
     final static int PARTICLE_SIZE = 9;// with colors
     //each particle contains
     final float[] fVertices = new float[NUM_PARTICLES * PARTICLE_SIZE];
     final Random gen = new Random(System.currentTimeMillis());
 
     private static final float holeSize = 0.5f;
-    private static final int pointSize = 13;
+    private static final int pointSize = 15;
 
     private final Context context;
 
@@ -77,16 +77,16 @@ public class BlackHoleParticleProgram implements GLProgram {
 
         for (int i = 0; i < NUM_PARTICLES; i++) {
             //r,g,b,a
-            fVertices[i*PARTICLE_SIZE + 0] = 1;
-            fVertices[i*PARTICLE_SIZE + 1] = 1;
-            fVertices[i*PARTICLE_SIZE + 2] = 1;
-            fVertices[i*PARTICLE_SIZE + 3] = gen.nextFloat();
+            fVertices[i*PARTICLE_SIZE + 0] = rnd(0.33f, 1);
+            fVertices[i*PARTICLE_SIZE + 1] = rnd(0.33f, 1);
+            fVertices[i*PARTICLE_SIZE + 2] = rnd(0.33f, 1);
+            fVertices[i*PARTICLE_SIZE + 3] = gen.nextFloat() > 0.5 ? 0.55f : 1;
 
-            fVertices[i*PARTICLE_SIZE + 4] = rnd(0.2f, 0.5f) * 1000;//life
-            fVertices[i*PARTICLE_SIZE + 5] = gen.nextFloat() * 66;//rand
-            fVertices[i*PARTICLE_SIZE + 6] = gen.nextFloat();//ring
-            fVertices[i*PARTICLE_SIZE + 7] = rnd(0.5f, 1.0f);//radius
-            fVertices[i*PARTICLE_SIZE + 8] = (gen.nextFloat() * 4 + 1) / 5000;//move
+            fVertices[i*PARTICLE_SIZE + 4] = (gen.nextFloat() + 0.66f) * 333;//life
+            fVertices[i*PARTICLE_SIZE + 5] = gen.nextFloat() * 60;//rand
+            fVertices[i*PARTICLE_SIZE + 6] = (gen.nextFloat() + 0.5f) / 1.24f;//ring
+            fVertices[i*PARTICLE_SIZE + 7] = (gen.nextFloat() + 0.5f) / 1.5f;//radius
+            fVertices[i*PARTICLE_SIZE + 8] = (gen.nextFloat() * 6f + 6f) / 600;//move
         }
         vertexBuffer.put(fVertices).position(0);
     }
@@ -140,7 +140,7 @@ public class BlackHoleParticleProgram implements GLProgram {
     }
 
     @Override public void onSizeChanged(GLEngine glEngine) {
-
+        glEngine.applyFulSizedViewport();
     }
 
     @Override public int getMaxFPS() {
