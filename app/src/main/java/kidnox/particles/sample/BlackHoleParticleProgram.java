@@ -82,7 +82,7 @@ public class BlackHoleParticleProgram implements GLProgram {
             fVertices[i*PARTICLE_SIZE + 2] = rnd(0.33f, 1);
             fVertices[i*PARTICLE_SIZE + 3] = gen.nextFloat() > 0.5 ? 0.55f : 1;
 
-            fVertices[i*PARTICLE_SIZE + 4] = (gen.nextFloat() + 0.66f) * 333;//life
+            fVertices[i*PARTICLE_SIZE + 4] = (gen.nextFloat() + 0.88f) * 280;//life
             fVertices[i*PARTICLE_SIZE + 5] = gen.nextFloat() * 60;//rand
             fVertices[i*PARTICLE_SIZE + 6] = (gen.nextFloat() + 0.5f) / 1.24f;//ring
             fVertices[i*PARTICLE_SIZE + 7] = (gen.nextFloat() + 0.5f) / 1.5f;//radius
