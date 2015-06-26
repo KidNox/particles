@@ -1,6 +1,8 @@
 precision mediump float;
 #define PI 3.1415
 
+uniform mat4 u_mvpMatrix;
+
 //const
 uniform float u_hole_r;
 uniform float u_scale;
@@ -25,6 +27,10 @@ uniform float u_elapsedTime;// +=1 for frame
 
 uniform float u_xTransition;
 uniform float u_yTransition;
+
+uniform bool applyAfterReset;
+uniform float u_xDivider_n;
+uniform float u_yDivider_n;
 
 //init state
 attribute float a_timeOffset;
@@ -79,4 +85,6 @@ void main()
     gl_Position.x = cos(angle / u_xDivider) * ring * u_xTransition;
     gl_Position.y = sin(angle / u_yDivider) * ring * u_yTransition;
     gl_Position.w = 1.0;
+
+    gl_Position *= u_mvpMatrix;
 }

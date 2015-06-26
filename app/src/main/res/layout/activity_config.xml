@@ -14,14 +14,34 @@
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="12dp">
 
-        <Button
-            android:id="@+id/btn_save"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAllCaps="false"
-            android:layout_gravity="center"
-            android:text="save"
-            android:onClick="onSaveClick"/>
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_save"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="false"
+                android:layout_margin="6dp"
+                android:layout_gravity="center"
+                android:text="save"
+                android:onClick="onSaveClick"/>
+
+            <Button
+                android:id="@+id/btn_reset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="false"
+                android:layout_margin="6dp"
+                android:layout_gravity="center"
+                android:text="reset"
+                android:onClick="onResetClick"/>
+
+        </LinearLayout>
+
+
 
     </FrameLayout>
 

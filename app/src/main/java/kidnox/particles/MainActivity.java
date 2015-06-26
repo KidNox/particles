@@ -33,9 +33,9 @@ public class MainActivity extends Activity {
     private void reset() {
         container.removeAllViews();
         glTextureView = new GLTextureView(this) {
-            @Override protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            /*@Override protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(widthMeasureSpec, widthMeasureSpec);
-            }
+            }*/
         };
         particleProgram = new BlackHoleParticleProgram(this, App.loadConfig());
         glTextureView.setGLProgram(particleProgram);
@@ -43,22 +43,21 @@ public class MainActivity extends Activity {
     }
 
     public void onResetClick(View v) {
-        if(!disableActionFor(2000)) return;
-        App.reset();
+        if(!disableActionFor(1000)) return;
         reset();
     }
 
     public void onConfigClick(View v) {
-        if(!disableActionFor(2000)) return;
+        if(!disableActionFor(1000)) return;
         startActivity(new Intent(this, ConfigActivity.class));
     }
 
     public void onExpandClick(View v) {
-        if(!disableActionFor(3000)) return;
+        if(!disableActionFor(1000)) return;
     }
 
     public void onCollapseClick(View v) {
-        if(!disableActionFor(3000)) return;
+        if(!disableActionFor(1000)) return;
     }
 
     public void onMenuClick(View v) {

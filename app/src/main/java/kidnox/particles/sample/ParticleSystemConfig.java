@@ -38,16 +38,19 @@ public final class ParticleSystemConfig {
     //transition
     //////////////////////////////////////////////////////////////
     int transitionType = 0;//-2 (<xy), -1(<x y>), 0 , 1 (>x y>), 2 (>x y<)
-    float transitionTime = 6;
-    int periodic = 1;
+    float transitionTime = 2;
+    int periodic = 0;
     float transitionDelta = 0;
     float xTransition = 1;
     float yTransition = 1;
 
+    float angleTransition = 0;
+    float initialAngle = 135;
+
     public ParticleSystemConfig() {
     }
 
-    public ParticleSystemConfig(ParticleSystemConfig other) {
+    public ParticleSystemConfig(ParticleSystemConfig other) {// todo update
         this.fps = other.fps;
         this.particlesCount = other.particlesCount;
         this.baseColor = other.baseColor;
@@ -114,20 +117,22 @@ public final class ParticleSystemConfig {
         }
     }
 
+    public float getAngleTransition(int frame) {
+        if(angleTransition == 0) return initialAngle;
+        return initialAngle + angleTransition * getTransitionValue(frame);
+    }
+
     private float getTransitionValue(float frame) {
         float totalFrames = fps * transitionTime;
         float t = frame % totalFrames;
+        int part = (int) (frame / totalFrames);
         t /= totalFrames;
-        if(periodic != 0) {
-            if(t < 0.5f) {
-                t *= 2;
-            } else {
-                t = (1 - t) * 2;
-            }
+        if(periodic != 1 && part > 0) {
+            return 1;
         }
+        t *= t;
         return (t + transitionDelta)/ (1f + transitionDelta);
     }
-
 
     @Override public String toString() {
         return "ParticleSystemConfig{" +

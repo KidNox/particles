@@ -1,10 +1,12 @@
 package kidnox.particles.sample;
 
 import android.content.Context;
+import android.opengl.Matrix;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.Arrays;
 import java.util.Random;
 
 import kidnox.particles.GLEngine;
@@ -21,6 +23,10 @@ public class BlackHoleParticleProgram implements GLProgram {
     final float[] fVertices;
     final Random gen = new Random(System.currentTimeMillis());
 
+    private float[] mvpMatrix = new float[16];
+    private float[] projectionMatrix = new float[16];
+    private float[] viewMatrix = new float[16];
+
     private final Context context;
 
     private FloatBuffer vertexBuffer;
@@ -28,6 +34,8 @@ public class BlackHoleParticleProgram implements GLProgram {
     int iProgId;
     int iTexId;
     int iTexture;
+
+    int pu_mvpMatrix;
 
     int pu_hole_r;
     int pu_scale;
@@ -65,6 +73,7 @@ public class BlackHoleParticleProgram implements GLProgram {
 
     @Override public void onBegin(GLEngine glEngine) {
         vertexBuffer = ByteBuffer.allocateDirect(fVertices.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+
         glClearColor(0, 0, 0, 0);
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
@@ -76,6 +85,8 @@ public class BlackHoleParticleProgram implements GLProgram {
         iProgId = GLHelper.linkProgram(vertexShader, fragmentShader);
         iTexId = GLHelper.loadPoint(config.pointSize, context.getResources().getColor(R.color.green));
         iTexture = glGetUniformLocation(iProgId, "u_texture");
+
+        pu_mvpMatrix = glGetUniformLocation(iProgId, "u_mvpMatrix");
 
         pu_hole_r = glGetUniformLocation(iProgId, "u_hole_r");
         pu_scale = glGetUniformLocation(iProgId, "u_scale");
@@ -99,7 +110,6 @@ public class BlackHoleParticleProgram implements GLProgram {
         pa_ring = glGetAttribLocation(iProgId, "a_ring");
         pa_radius = glGetAttribLocation(iProgId, "a_radius");
         pa_velocity = glGetAttribLocation(iProgId, "a_velocity");
-
 
         for (int i = 0; i < config.particlesCount; i++) {
             //r,g,b,a
@@ -130,6 +140,17 @@ public class BlackHoleParticleProgram implements GLProgram {
         //ParticleSystemConfig config = this.config.copy();
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(iProgId);
+
+        Arrays.fill(viewMatrix, 0);
+        Matrix.setLookAtM(viewMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
+        float angleTransition = config.getAngleTransition(elapsedTime);
+        if(angleTransition != 0.0f) {
+            Matrix.rotateM(viewMatrix, 0, angleTransition, 0, 0, 1);
+        }
+        Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
+
+        glUniformMatrix4fv(pu_mvpMatrix, 1, false, mvpMatrix, 0);
+
         glUniform1f(pu_scale, config.pointSize);
         glUniform1f(pu_velocityDivider, config.velocityDivider / FPS);
         glUniform1f(pu_angleMultiplier, (float) (config.angleMultiplier * Math.PI));
@@ -192,6 +213,11 @@ public class BlackHoleParticleProgram implements GLProgram {
 
     @Override public void onSizeChanged(GLEngine glEngine) {
         glEngine.applyFulSizedViewport();
+        final float width = glEngine.getSurfaceConfig().getWidth();
+        final float height = glEngine.getSurfaceConfig().getHeight();
+        float ratio = width / height;
+
+        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
     }
 
     @Override public int getMaxFPS() {

@@ -19,9 +19,15 @@ public class ConfigActivity extends Activity {
     }
 
     public void onSaveClick(View v) {
-        if(disableActionFor(1000) && App.saveConfig(editText.getText().toString())) {
+        if(disableActionFor(500) && App.saveConfig(editText.getText().toString())) {
             finish();
         }
+    }
+
+    public void onResetClick(View v) {
+        if(!disableActionFor(500)) return;
+        App.reset();
+        editText.setText(App.loadConfigAsString());
     }
 
     boolean actionDisabled;
