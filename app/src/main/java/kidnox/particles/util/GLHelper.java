@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.opengl.GLUtils;
+import android.util.DisplayMetrics;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -199,6 +200,11 @@ public class GLHelper {
 
     public static float logBase(float base, float value) {
         return (float) (Math.log(value) / Math.log(base));
+    }
+
+    public static float dpToPx(float dp, Context context) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        return dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT);
     }
 
 }

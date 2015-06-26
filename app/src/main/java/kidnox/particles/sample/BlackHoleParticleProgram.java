@@ -16,28 +16,10 @@ import static android.opengl.GLES20.*;
 
 public class BlackHoleParticleProgram implements GLProgram {
 
-    final static int NUM_PARTICLES = 2000;
+    public static final int FPS = 60;
     final static int PARTICLE_SIZE = 10;// with colors
-    final float[] fVertices = new float[NUM_PARTICLES * PARTICLE_SIZE];
+    final float[] fVertices;
     final Random gen = new Random(System.currentTimeMillis());
-
-    private static final float velocityFactor = 1f;
-
-    private static final float initialOffset = 1f;
-    private static final float ringOffset = 0.23f;
-    private static final float holeSize = 0.5f;
-    private static final int pointSize = 18;
-
-    private static final float minParticleRadius = 0.1f;
-
-    private static final float velocityDivider = 800f;
-
-    private static final float angleMultiplier = (float) (18f * Math.PI);
-    private static final float rMultiplier = 0.994f;
-    private static final float rInitialMultiplier = 1f;
-
-    private static final float xMultiplier = 1f / 2.4f;
-    private static final float yMultiplier = 1f / 1.8f;
 
     private final Context context;
 
@@ -54,9 +36,14 @@ public class BlackHoleParticleProgram implements GLProgram {
     int pu_angleMultiplier;
     int pu_rMultiplier;
     int pu_rInitialMultiplier;
-    int pu_xMultiplier;
-    int pu_yMultiplier;
+    int pu_xDivider;
+    int pu_yDivider;
     int pu_ringOffsetMultiplier;
+    int pu_minParticleSize;
+    int pu_lifeMultiplier;
+    int pu_xTransition;
+    int pu_yTransition;
+
     int pa_timeOffset;
     int pa_color;
     int pa_life;//based on particle radius
@@ -65,8 +52,15 @@ public class BlackHoleParticleProgram implements GLProgram {
     int pa_radius;
     int pa_velocity;
 
-    public BlackHoleParticleProgram(Context context) {
+    private final ParticleSystemConfig config;
+    private final float pxPerDp;
+
+    public BlackHoleParticleProgram(Context context, ParticleSystemConfig config) {
+        if(config == null) throw new NullPointerException();
+        fVertices = new float[config.particlesCount * PARTICLE_SIZE];
         this.context = context;
+        this.config = config;
+        pxPerDp = GLHelper.dpToPx(1, context);
     }
 
     @Override public void onBegin(GLEngine glEngine) {
@@ -80,7 +74,7 @@ public class BlackHoleParticleProgram implements GLProgram {
         int fragmentShader = GLHelper.compileFragmentShader(context, R.raw.particle_fragment);
 
         iProgId = GLHelper.linkProgram(vertexShader, fragmentShader);
-        iTexId = GLHelper.loadPoint(pointSize, context.getResources().getColor(R.color.green));
+        iTexId = GLHelper.loadPoint(config.pointSize, context.getResources().getColor(R.color.green));
         iTexture = glGetUniformLocation(iProgId, "u_texture");
 
         pu_hole_r = glGetUniformLocation(iProgId, "u_hole_r");
@@ -89,10 +83,14 @@ public class BlackHoleParticleProgram implements GLProgram {
         pu_angleMultiplier = glGetUniformLocation(iProgId, "u_angleMultiplier");
         pu_rMultiplier = glGetUniformLocation(iProgId, "u_rMultiplier");
         pu_rInitialMultiplier = glGetUniformLocation(iProgId, "u_rInitialMultiplier");
-        pu_xMultiplier = glGetUniformLocation(iProgId, "u_xMultiplier");
-        pu_yMultiplier = glGetUniformLocation(iProgId, "u_yMultiplier");
+        pu_xDivider = glGetUniformLocation(iProgId, "u_xDivider");
+        pu_yDivider = glGetUniformLocation(iProgId, "u_yDivider");
         pu_ringOffsetMultiplier = glGetUniformLocation(iProgId, "u_ringOffsetMultiplier");
         pu_elapsedTime = glGetUniformLocation(iProgId, "u_elapsedTime");
+        pu_minParticleSize = glGetUniformLocation(iProgId, "u_minParticleSize");
+        pu_lifeMultiplier = glGetUniformLocation(iProgId, "u_lifeMultiplier");
+        pu_xTransition = glGetUniformLocation(iProgId, "u_xTransition");
+        pu_yTransition = glGetUniformLocation(iProgId, "u_yTransition");
 
         pa_timeOffset = glGetAttribLocation(iProgId, "a_timeOffset");
         pa_color = glGetAttribLocation(iProgId, "a_color");
@@ -103,23 +101,24 @@ public class BlackHoleParticleProgram implements GLProgram {
         pa_velocity = glGetAttribLocation(iProgId, "a_velocity");
 
 
-        for (int i = 0; i < NUM_PARTICLES; i++) {
+        for (int i = 0; i < config.particlesCount; i++) {
             //r,g,b,a
-            fVertices[i*PARTICLE_SIZE + 0] = rnd(0.33f, 1);
-            fVertices[i*PARTICLE_SIZE + 1] = rnd(0.33f, 1);
-            fVertices[i*PARTICLE_SIZE + 2] = rnd(0.33f, 1);
-            fVertices[i*PARTICLE_SIZE + 3] = gen.nextFloat() /*> 0.5 ? 0.4f : 1*/;
+            fVertices[i*PARTICLE_SIZE + 0] = rnd(config.rColorOffset, 1);
+            fVertices[i*PARTICLE_SIZE + 1] = rnd(config.gColorOffset, 1);
+            fVertices[i*PARTICLE_SIZE + 2] = rnd(config.bColorOffset, 1);
+            fVertices[i*PARTICLE_SIZE + 3] = rnd(config.aColorOffset, 1) /*> 0.5 ? 0.4f : 1*/;
 
-            float radius = (gen.nextFloat() + 0.66f) / 1.66f;
-            float life = GLHelper.logBase(rMultiplier, minParticleRadius / radius);//log base rMultiplier
+            float radius = rnd(config.minInitParticleRadius, 1);
+            float life = GLHelper.logBase(config.rMultiplier, config.minParticleRadius / radius);//log base rMultiplier
+            life = life + (life * config.lifeMultiplier * 2);
             fVertices[i*PARTICLE_SIZE + 7] = radius;
             fVertices[i*PARTICLE_SIZE + 4] = (int)life;
 
             fVertices[i*PARTICLE_SIZE + 5] = gen.nextFloat();//angle
-            fVertices[i*PARTICLE_SIZE + 6] = (gen.nextFloat() + ringOffset) / (1f + ringOffset);//ring
-            fVertices[i*PARTICLE_SIZE + 8] = gen.nextFloat() * 4f + 1f;//velocity
+            fVertices[i*PARTICLE_SIZE + 6] = rnd(config.ringOffset, 1);//ring
+            fVertices[i*PARTICLE_SIZE + 8] = gen.nextFloat() * config.velocityMultiplier + 1f;//velocity
 
-            fVertices[i*PARTICLE_SIZE + 9] = gen.nextInt(NUM_PARTICLES);//time offset
+            fVertices[i*PARTICLE_SIZE + 9] = gen.nextInt(config.particlesCount);//time offset
         }
         vertexBuffer.put(fVertices).position(0);
     }
@@ -128,20 +127,26 @@ public class BlackHoleParticleProgram implements GLProgram {
 
     @Override public void drawFrame(GLEngine glEngine, long currentTime) {
         elapsedTime++;
+        //ParticleSystemConfig config = this.config.copy();
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(iProgId);
-        glUniform1f(pu_scale, pointSize);
-        glUniform1f(pu_velocityDivider, velocityDivider);
-        glUniform1f(pu_angleMultiplier, angleMultiplier);
-        glUniform1f(pu_rMultiplier, rMultiplier);
-        glUniform1f(pu_rInitialMultiplier, rInitialMultiplier);
-        glUniform1f(pu_xMultiplier, xMultiplier);
-        glUniform1f(pu_yMultiplier, yMultiplier);
-        glUniform1f(pu_ringOffsetMultiplier, initialOffset);
+        glUniform1f(pu_scale, config.pointSize);
+        glUniform1f(pu_velocityDivider, config.velocityDivider / FPS);
+        glUniform1f(pu_angleMultiplier, (float) (config.angleMultiplier * Math.PI));
+        glUniform1f(pu_rMultiplier, config.rMultiplier);
+        glUniform1f(pu_rInitialMultiplier, config.rInitialMultiplier);
+        glUniform1f(pu_xDivider, config.getXDivider(elapsedTime));
+        glUniform1f(pu_yDivider, config.getYDivider(elapsedTime));
+        glUniform1f(pu_ringOffsetMultiplier, config.initialOffset);
+        glUniform1f(pu_lifeMultiplier, config.lifeMultiplier);
+        glUniform1f(pu_minParticleSize, config.minParticleRadius);
+
+        glUniform1f(pu_xTransition, config.getXTransition(elapsedTime));//
+        glUniform1f(pu_yTransition, config.getYTransition(elapsedTime));//
 
         glUniform1f(pu_elapsedTime, elapsedTime);
-        glUniform1f(pu_scale, pointSize);
-        glUniform1f(pu_hole_r, holeSize);
+        glUniform1f(pu_scale, config.pointSize * pxPerDp);
+        glUniform1f(pu_hole_r, config.ringSize);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, iTexId);
@@ -176,11 +181,13 @@ public class BlackHoleParticleProgram implements GLProgram {
         glVertexAttribPointer(pa_timeOffset, 1, GL_FLOAT, false, PARTICLE_SIZE * 4, vertexBuffer);
         glEnableVertexAttribArray(pa_timeOffset);
 
-        glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
+        glDrawArrays(GL_POINTS, 0, config.particlesCount);
     }
 
     @Override public void onEnd(GLEngine glEngine) {
-
+        if(iProgId != 0) {
+            glDeleteProgram(iProgId);
+        }
     }
 
     @Override public void onSizeChanged(GLEngine glEngine) {
@@ -188,7 +195,7 @@ public class BlackHoleParticleProgram implements GLProgram {
     }
 
     @Override public int getMaxFPS() {
-        return 30;
+        return FPS;
     }
 
     public float rnd(float min, float max) {
